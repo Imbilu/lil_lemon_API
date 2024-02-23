@@ -11,6 +11,8 @@ from rest_framework import status
 from .permissions import IsDeliveryCrew, IsManager
 from rest_framework.permissions import IsAdminUser
 from django.contrib.auth.models import User, Group
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+
 
 # Create your views here.
 class CategoriesView(generics.ListCreateAPIView):
@@ -27,6 +29,7 @@ class MenuItemsView(generics.ListCreateAPIView):
     serializer_class = MenuItemSerializer
     ordering_fields = ['price','title']
     search_fields = ['title','category__title']
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get_permissions(self):
         permission_classes = []
@@ -124,8 +127,8 @@ class OrderItemUpdateView(generics.UpdateAPIView):
     
 
 class managers(generics.ListCreateAPIView):
-    #authentication_classes = [JWTAuthentication]
-    #permission_classes = [IsAdminUser]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminUser, IsManager]
 
     def get(self, request, group_name):
         # Get the group
@@ -161,8 +164,8 @@ class managers(generics.ListCreateAPIView):
     
 class singleUser(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
-    #permission_classes = [IsAdminUser, IsManager]
-    #authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminUser, IsManager]
+    authentication_classes = [JWTAuthentication]
 
     def get_queryset(self, group_name, user_id):
         group = Group.objects.get(name=group_name)

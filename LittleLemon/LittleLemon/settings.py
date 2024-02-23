@@ -156,6 +156,16 @@ REST_FRAMEWORK = {
        'rest_framework.filters.OrderingFilter',
        'rest_framework.filters.SearchFilter'
    ],
+
+   'DEFAULT_THROTTLE_CLASSES': [
+     'rest_framework.throttling.AnonRateThrottle',
+     'rest_framework.throttling.UserRateThrottle' 
+   ],
+
+   'DEFAULT_THROTTLE_RATES': {
+       'anon': '1/minute',
+       'user': '5/minute'
+   },
     
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 2
