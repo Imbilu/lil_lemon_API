@@ -1,11 +1,16 @@
 from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import generics
 from .models import MenuItem, Order, Cart, Category, OrderItem
-from .serializers import MenuItemSerializer, OrderSerializer, CartSerializer, CategorySerializer, OrderItemSerializer
+from .serializers import MenuItemSerializer, OrderSerializer, CartSerializer, CategorySerializer, OrderItemSerializer, GroupSerializer, UserSerializer
 from rest_framework import status
-from .permissions import IsDeliveryCrew, IsManager, IsAdminUser
+from .permissions import IsDeliveryCrew, IsManager
+from rest_framework.permissions import IsAdminUser
+from django.contrib.auth.models import User, Group
 
 # Create your views here.
 class CategoriesView(generics.ListCreateAPIView):
@@ -38,7 +43,7 @@ class MenuItemView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         permission_classes = []
         if self.request.method != 'GET':
-            permission_classes = [IsManager]
+            permission_classes = [IsManager, IsAdminUser]
         return [permission() for permission in permission_classes]
 
 
@@ -117,3 +122,49 @@ class OrderItemUpdateView(generics.UpdateAPIView):
         order = Order.objects.get(pk=order_id)
         return OrderItem.objects.filter(order=order)
     
+
+class managers(generics.ListCreateAPIView):
+    #authentication_classes = [JWTAuthentication]
+    #permission_classes = [IsAdminUser]
+
+    def get(self, request, group_name):
+        # Get the group
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            return Response({"error": "Group not found"}, status=400)
+
+        # Get users belonging to the group
+        users = group.user_set.all()
+
+        # Serialize the users
+        serializer = UserSerializer(users, many=True)
+
+        return Response(serializer.data, status=200)
+
+    def post(self, request, group_name):
+        # Get the group
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            return Response({"error": "Group not found"}, status=400)
+
+        # Validate and create user
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            group.user_set.add(user)  # Add user to the group
+            return Response(serializer.data, status=200)
+        else:
+            return Response(serializer.errors, status=400)
+    
+    
+class singleUser(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = UserSerializer
+    #permission_classes = [IsAdminUser, IsManager]
+    #authentication_classes = [JWTAuthentication]
+
+    def get_queryset(self, group_name, user_id):
+        group = Group.objects.get(name=group_name)
+        user = group.user_set.get(pk=user_id)
+        

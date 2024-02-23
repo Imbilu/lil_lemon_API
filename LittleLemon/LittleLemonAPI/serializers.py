@@ -1,7 +1,19 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from .models import MenuItem, Category, Order, OrderItem, Cart
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = "__all__"
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = "__all__"
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
